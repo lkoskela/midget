@@ -2,7 +2,6 @@ package com.github.lkoskela.midget;
 
 import static com.github.lkoskela.midget.util.ID.idWithPrefix;
 
-
 import javax.portlet.Portlet;
 import javax.portlet.PortletConfig;
 import javax.portlet.PortletException;
@@ -21,24 +20,13 @@ import com.github.lkoskela.midget.impl.config.MidgetPortletConfig;
 import com.github.lkoskela.midget.impl.services.MidgetContainerServices;
 
 public class MidgetContainer {
+
 	private PortletContainer container;
 	private MidgetExecutionContext executionContext;
 
 	public MidgetContainer() {
 		this.executionContext = new MidgetExecutionContext();
 		this.container = initializePortletContainer();
-	}
-
-	private PortletContainer initializePortletContainer() {
-		String id = idWithPrefix("Container-");
-		ContainerServices services = new MidgetContainerServices(executionContext);
-		PortletContainer container = new PortletContainerImpl(id, services);
-		try {
-			container.init();
-		} catch (PortletContainerException e) {
-			throw new RuntimeException(e);
-		}
-		return container;
 	}
 
 	/**
@@ -61,11 +49,25 @@ public class MidgetContainer {
 		container.destroy();
 	}
 
+	private PortletContainer initializePortletContainer() {
+		String id = idWithPrefix("Container-");
+		ContainerServices services = new MidgetContainerServices(
+				executionContext);
+		PortletContainer container = new PortletContainerImpl(id, services);
+		try {
+			container.init();
+		} catch (PortletContainerException e) {
+			throw new RuntimeException(e);
+		}
+		return container;
+	}
+
 	private DeployedPortlet createDeployedPortlet(Portlet portlet,
 			PortletConfig config, MidgetPortletWindow window) {
 		ServletContext servletContext = new MockServletContext();
 		DeployedPortlet handle = new DeployedPortlet(container, portlet,
-				config.getPortletContext(), servletContext, executionContext, window);
+				config.getPortletContext(), servletContext, executionContext,
+				window);
 		executionContext.add(config, servletContext, handle);
 		return handle;
 	}
@@ -73,9 +75,6 @@ public class MidgetContainer {
 	private void initialize(Portlet portlet, PortletConfig config) {
 		try {
 			portlet.init(config);
-			config.getPortletContext().log(
-					"Deployed and initialized Portlet '"
-							+ config.getPortletName() + "'");
 		} catch (PortletException e) {
 			throw new RuntimeException(e);
 		}

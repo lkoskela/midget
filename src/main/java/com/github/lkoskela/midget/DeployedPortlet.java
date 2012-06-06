@@ -64,38 +64,6 @@ public class DeployedPortlet {
 	}
 
 	/**
-	 * Create an HttpServletRequest to be passed in to the Portlet under test.
-	 */
-	public MockHttpServletRequest request() {
-		if (nextRequest == null) {
-			nextRequest = new MockHttpServletRequest(servletContext);
-		}
-		return nextRequest;
-	}
-
-	/**
-	 * Create a PortletSession for the Portlet under test.
-	 * <p>
-	 * By default the Portlet has no active session Ð invoking this method will
-	 * force creating one even if you don't manipulate the session state.
-	 */
-	public MockPortletSession session() {
-		if (portletSession == null) {
-			portletSession = createNewPortletSession();
-		}
-		return portletSession;
-	}
-
-	private MockPortletSession createNewPortletSession() {
-		ContainerServices services = portletContainer.getContainerServices();
-		PortletEnvironmentService env = services.getPortletEnvironmentService();
-		MockHttpSession httpSession = new MockHttpSession();
-		request().setSession(httpSession);
-		return (MockPortletSession) env.createPortletSession(portletContext,
-				getPortletWindow(), httpSession);
-	}
-
-	/**
 	 * Simulate a 'render' request to the deployed Portlet.
 	 */
 	public DeployedPortlet render() throws PortletException, IOException,
@@ -177,6 +145,88 @@ public class DeployedPortlet {
 		portletWindow.setWindowState(state);
 	}
 
+	/**
+	 * Stub the given resource to render the provided content when the Portlet
+	 * under test tries to include it.
+	 * 
+	 * @param path
+	 *            The path for which we are providing a stubbed response.
+	 * @param content
+	 *            The stubbed response content.
+	 */
+	public void stubResource(String path, String content) {
+		executionContext.stubResource(getPortletName(), path, content);
+	}
+
+	/**
+	 * Returns the path of the latest forward or <code>null</code> if no
+	 * forwarding was done.
+	 */
+	public String lastForwardedPath() {
+		return executionContext.getForwardedPath(getPortletName());
+	}
+
+	/**
+	 * Returns the path of the latest redirect or <code>null</code> if no
+	 * redirect was done.
+	 */
+	public String lastRedirectedPath() {
+		return executionContext.getRedirectedPath(getPortletName());
+	}
+
+	/**
+	 * @param name
+	 *            Name of the parameter.
+	 * @param value
+	 *            Value for the parameter.
+	 */
+	public void addRequestParameter(String name, String value) {
+		request().addParameter(name, value);
+	}
+
+	/**
+	 * @param name
+	 *            Name of the parameter.
+	 * @param values
+	 *            Values for the parameter.
+	 */
+	public void addRequestParameter(String name, String[] values) {
+		request().addParameter(name, values);
+	}
+
+	/**
+	 * @param name
+	 *            Name of the attribute.
+	 * @param value
+	 *            Value for the attribute.
+	 */
+	public void setRequestAttribute(String name, Object value) {
+		request().setAttribute(name, value);
+	}
+
+	/**
+	 * @param name
+	 *            Name of the attribute.
+	 * @param value
+	 *            Value for the attribute.
+	 */
+	public void setSessionAttribute(String name, Object value) {
+		session().setAttribute(name, value);
+	}
+
+	/**
+	 * @param name
+	 *            Name of the attribute.
+	 * @param value
+	 *            Value for the attribute.
+	 * @param scope
+	 *            One of PortletSession.APPLICATION_SCOPE or
+	 *            PortletSession.PORTLET_SCOPE.
+	 */
+	public void setSessionAttribute(String name, Object value, int scope) {
+		session().setAttribute(name, value, scope);
+	}
+
 	private void doAction(MockHttpServletRequest request)
 			throws PortletException, IOException, PortletContainerException {
 		MockHttpServletResponse response = new MockHttpServletResponse();
@@ -211,23 +261,34 @@ public class DeployedPortlet {
 		}
 	}
 
+	private MockPortletSession createNewPortletSession() {
+		ContainerServices services = portletContainer.getContainerServices();
+		PortletEnvironmentService env = services.getPortletEnvironmentService();
+		MockHttpSession httpSession = new MockHttpSession();
+		request().setSession(httpSession);
+		return (MockPortletSession) env.createPortletSession(portletContext,
+				getPortletWindow(), httpSession);
+	}
+
+	private MockHttpServletRequest request() {
+		if (nextRequest == null) {
+			nextRequest = new MockHttpServletRequest(servletContext);
+		}
+		return nextRequest;
+	}
+
+	private MockPortletSession session() {
+		if (portletSession == null) {
+			portletSession = createNewPortletSession();
+		}
+		return portletSession;
+	}
+
 	private void resetForNextRequest() {
 		nextRequest = null;
 	}
 
 	private String getPortletName() {
 		return portletWindow.getPortletDefinition().getPortletName();
-	}
-
-	public String lastForwardedPath() {
-		return executionContext.getForwardedPath(getPortletName());
-	}
-
-	public void stubResource(String path, String stubbedResponseContent) {
-		executionContext.stubResource(getPortletName(), path, stubbedResponseContent);
-	}
-
-	public String lastRedirectedPath() {
-		return executionContext.getRedirectedPath(getPortletName());
 	}
 }
